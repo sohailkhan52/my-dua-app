@@ -26,6 +26,9 @@ class User extends Authenticatable implements JWTSubject  // ← ADD THIS
         'password',
         'token',
         'token_expires',
+        'google_token',
+        'google_id',
+        'google_refresh_token',
     ];
 
     /**
@@ -36,6 +39,9 @@ class User extends Authenticatable implements JWTSubject  // ← ADD THIS
     protected $hidden = [
         'password',
         'remember_token',
+        'token',
+        'google_token' => 'encrypted',
+        'google_refresh_token' => 'encrypted',
     ];
 
     /**
