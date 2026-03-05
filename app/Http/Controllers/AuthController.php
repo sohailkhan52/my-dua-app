@@ -24,6 +24,14 @@ class AuthController extends Controller
          'errors'=>$validate->errors(),
       ],422);
     }
+    $google_check=User::where(['email',$request->email]);
+    if($google_check!==NULL)
+      {
+       return response()->json([
+         'status'=>'error',
+         'message'=>'this email can only be log in through gmail'
+      ],401);
+      }
     $credentials=$request->only("email",'password');
     if(!$token=auth('api')->attempt($credentials)){
       return response()->json([
