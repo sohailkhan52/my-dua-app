@@ -63,13 +63,9 @@
 
                         <div class="row mb-0">
                             <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn w-100 mb-2 btn-primary">
+                                <button type="submit" class="btn btn-primary">
                                     {{ __('Register') }}
                                 </button>
-                                <a href="{{ route('google.login') }}" 
-                                   class="btn btn-danger w-100">
-                                   Login with Google
-                                </a>
                             </div>
                         </div>
                     </form>

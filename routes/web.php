@@ -8,14 +8,5 @@ Route::get('/', function () {
 });
 
 Auth::routes();
-
+Auth::routes(['register' => false]);
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::post('/api/login', [App\Http\Controllers\AuthController::class, 'login']);
-
-
-// google sign in routes 
-Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])
-    ->name('google.login');
-
-Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])
-    ->name('google.callback');

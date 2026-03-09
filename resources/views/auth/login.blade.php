@@ -15,7 +15,7 @@
                             <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
 
                             <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="username" autofocus>
 
                                 @error('email')
                                     <span class="invalid-feedback" role="alert">
@@ -62,10 +62,7 @@
                                         {{ __('Forgot Your Password?') }}
                                     </a>
                                 @endif
-                                <a href="{{ route('google.login') }}" 
-                                   class="btn btn-danger w-100">
-                                   Login with Google
-                                </a>
+
                             </div>
                         </div>
                     </form>
@@ -74,4 +71,21 @@
         </div>
     </div>
 </div>
+@endsection
+@section('scripts')
+<script>
+    // This helps browsers recognize this as a login form
+    document.addEventListener('DOMContentLoaded', function() {
+        // Force browser password manager to check this form
+        if (window.PasswordCredential) {
+            // For browsers that support the Credential Management API
+            navigator.credentials.get({password: true}).then(function(credential) {
+                if (credential) {
+                    document.getElementById('email').value = credential.id;
+                    document.getElementById('password').value = credential.password;
+                }
+            });
+        }
+    });
+</script>
 @endsection

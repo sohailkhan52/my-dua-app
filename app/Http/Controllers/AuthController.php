@@ -24,21 +24,18 @@ class AuthController extends Controller
          'errors'=>$validate->errors(),
       ],422);
     }
-    $google_check=User::where(['email',$request->email]);
-    if($google_check!==NULL)
-      {
-       return response()->json([
-         'status'=>'error',
-         'message'=>'this email can only be log in through gmail'
-      ],401);
-      }
+
     $credentials=$request->only("email",'password');
-    if(!$token=auth('api')->attempt($credentials)){
-      return response()->json([
-         'status'=>'error',
-         'message'=>'invalid Credentials'
-      ],401);
-    }
+        $user = User::where("email", $request->email)->first();
+            if (!$user||!$user->hasRole('admin')) {
+
+            auth()->logout();
+
+            return response()->json([
+               'error'=>"Only admin can login"
+            ]);
+        }
+    $token=auth('api')->attempt($credentials);
 
     $ttl=auth('api')->factory()->getTTL();
 
@@ -51,46 +48,14 @@ class AuthController extends Controller
     return response()->json([
             'status' => 'success',
             'user'   => auth('api')->user(),
-          
-        ]);
-    }
-
-    public function register(Request $request){
-      $validate= Validator::make($request->all(),[
-         'name' =>'required|string|max:255',
-         'email'=>'required|email|unique:users',
-         'password'=>'required|string|min:3|confirmed',
-      ]);
-      if($validate->fails()){
-         return response()->json([
-            'status'=>'error',
-            'errors'=>$validate->errors(),
-         ],422);
-      }
-      $user = User::create([
-         'name'=>$request->name,
-         'email'=>$request->email,
-         'password'=>Hash::make($request->password),
-      ]);
-      $user->assignRole('user');
-      $token = auth('api')->login($user);
-      $ttl=auth('api')->factory()->getTTL();
-
-      $expiresAt = now()->addMinutes($ttl);
-      $user->update([
-         'token'=>$token,
-         'token_expires'=>$expiresAt,
-      ]);
-        return response()->json([
-            'status' => 'success',
-            'message' => 'User registered successfully',
-            'user' => $user,
             'authorization' => [
                 'token' => $token,
                 'type'  => 'bearer',
             ],
-        ], 201);
+          
+        ]);
     }
+
         public function user()
     {
         return response()->json(auth('api')->user());
