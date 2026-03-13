@@ -49,7 +49,7 @@
         ->where('word_number',$tran->word_number)->first();
         @endphp
       <tr>
-       <td>{!! $tran->translation->language !!}</td>
+       <td>{!! $tran->translation->language->name !!}</td>
        <td>{!! $tran->surah_number !!}</td>
        <td>{!! $tran->ayah_number !!}</td>
        <td>{!! $tran->word_number !!}</td>
@@ -57,9 +57,11 @@
        <td>{!! $arabic_word->arabic_text !!}</td>
         </tr> 
 @endforeach
+
 @endif
     </tbody>
 </table>
+{!! $translation->onEachSide(1)->links('pagination::simple-bootstrap-4') !!}
         </div>
     </div>
 </div>

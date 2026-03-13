@@ -34,8 +34,8 @@ class HomeController extends Controller
 
    public function show(Request $request){
     $perPage = 100; // Show 100 records per page
-    
-    if($request->id >= 4){
+    $translation=Translation::where('id', $request->id)->first();
+    if($translation->category_id==2){
         // Word by Word - Paginate the results
         $translation = TranslationWord::where('translation_id', $request->id)
                        ->paginate($perPage);

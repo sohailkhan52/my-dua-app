@@ -19,6 +19,7 @@ Route::get('/translation/edit/{id}', [App\Http\Controllers\TranslationController
 Route::get('/translation/delete/{id}', [App\Http\Controllers\TranslationController::class, 'delete']);
 Route::put('/translation/update/{id}', [App\Http\Controllers\TranslationController::class, 'update'])->name('translation.update');
 
+Route::resource('fonts',App\Http\Controllers\FontController::class);
     
 
 
