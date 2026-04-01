@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\TranslationController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FontController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -10,20 +13,19 @@ Route::get('/', function () {
 
 Auth::routes();
 Auth::routes(['register' => false]);
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::get('/translation', [App\Http\Controllers\TranslationController::class, 'index']);
-Route::get('/translation/addtranslation', [App\Http\Controllers\TranslationController::class, 'addTranslation']);
-Route::post('/translation/store', [App\Http\Controllers\TranslationController::class, 'store'])->name('translation.store');
-Route::get('/translation/show/{id}', [App\Http\Controllers\HomeController::class, 'show']);
-Route::get('/fontt/{id}', [App\Http\Controllers\FontController::class, 'changeFont']);
-Route::get('/translation/download/{id}', [App\Http\Controllers\PdfController::class, 'Download'])->name('translation.download');
-Route::get('/translation/edit/{id}', [App\Http\Controllers\TranslationController::class, 'editTranslation']);
-Route::get('/translation/delete/{id}', [App\Http\Controllers\TranslationController::class, 'delete']);
-Route::put('/translation/update/{id}', [App\Http\Controllers\TranslationController::class, 'update'])->name('translation.update');
+Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('/translation', [TranslationController::class, 'index']);
+Route::get('/translation/addtranslation', [TranslationController::class, 'addTranslation']);
+Route::post('/translation/store', [TranslationController::class, 'store'])->name('translation.store');
+Route::get('/translation/show/{id}', [HomeController::class, 'show']);
+Route::get('/fontt/{id}', [FontController::class, 'changeFont']);
+Route::get('/translation/edit/{id}', [TranslationController::class, 'editTranslation']);
+Route::get('/translation/delete/{id}', [TranslationController::class, 'delete']);
+Route::put('/translation/update/{id}', [TranslationController::class, 'update'])->name('translation.update');
 
-Route::resource('fonts',App\Http\Controllers\FontController::class);
-    Route::get('fonts/{font}/download', [App\Http\Controllers\FontController::class, 'download'])
+Route::resource('fonts',FontController::class);
+    Route::get('fonts/{font}/download', [FontController::class, 'download'])
         ->name('fonts.download');
     
 
-
+Route::post('/surah', [ExportController::class, 'downloadSurah']);

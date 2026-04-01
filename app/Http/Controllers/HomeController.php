@@ -59,12 +59,13 @@ class HomeController extends Controller
         $flag = 0;
     }
     $fonts=Font::all();
-    // dd(session('default_font_id'));
-        $defaultFont= 3;
-       
+    
+        $defaultFont= session('default_font_id')??3;
 
-
-    return view('translations.index', compact("translation", 'arabic','defaultFont','flag','fonts','mainTranslation'));
+     //this array helps in downloading the translation surah wise
+     $surahs = range(1, 114);
+     
+    return view('translations.index', compact("surahs","translation", 'arabic','defaultFont','flag','fonts','mainTranslation'));
 }
 
 

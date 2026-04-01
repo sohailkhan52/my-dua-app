@@ -3,6 +3,9 @@
 @section('content')
 
 <div class="container-fluid">
+                @if(session('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3>Translations</h3>
@@ -20,32 +23,46 @@
             </div>
         </div>
         <div class="card-body">
-            @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-            @endif
 
-<a href="{{ route('translation.download', ['id' => $mainTranslation->id, 'page' => request('page', 1)]) }}" class="btn btn-primary">
-    Download (Page {!! request('page', 1) !!})
-</a>{{session('default_font_id')}}
+
+
+<div class="mb-3"> 
+
+<form action="/surah" method=post>
+    @csrf 
+    <select name="surah no" id="">
+        <option > Select Surah</option>
+        @foreach($surahs as $surah)
+        <option value="{{$surah}}">Surah No {{$surah}}</option>
+        @endforeach
+    </select>    
+        <input type="hidden" name="translationId" value="{{$mainTranslation->id}}">
+<button type=submit class="btn btn-sm btn-primary">Download</button>
+</form>
+
+</div>
 
 @php
-    $selectedFont =  session('default_font_id')??3;
+    $selectedFont =  $defaultFont;
     $fontFile =  asset('storage/' . $fonts->where('id', $selectedFont)->first()->font_path);
 @endphp
-{{$fontFile}}
+
 <style>
     @font-face {
         font-family: 'CustomFont';
         src: url('{{ $fontFile }}');
     }
     
-    .translation-text {
+    .arabic-text {
         font-family: 'CustomFont';
+    }
+    .translation-text {
+        font-family: 'Noto Nastaliq Urdu';
     }
 </style>
 
 
-<div class="translation-text" id="translationContainer">
+<div  id="translationContainer">
     <table class='table bordered'>
     <thead>
         <th>Translation Language</th>
@@ -54,7 +71,7 @@
         @if($flag===1)
         <th>Ayah No</th>
         @endif
-        <th>Text</th>
+        <th >Text</th>
         <th>Arabic Text</th>
     </thead>
     <tbody>
@@ -66,11 +83,11 @@
         ->where('surah_number',$tran->surah_number)->first();
         @endphp
       <tr>
-       <td>{!! $tran->translation->language->name!!}</td>
+       <td class="translation-text">{!! $tran->translation->language->name!!}</td>
        <td>{!! $tran->surah_number !!}</td>
        <td>{!! $tran->ayah_number !!}</td>
-       <td>{!! $tran->verse_text!!}</td>
-       <td >{!! $arabic_word->arabic_text!!}</td>
+       <td class="translation-text">{!! $tran->verse_text!!}</td>
+       <td class="arabic-text">{!! $arabic_word->arabic_text!!}</td>
         </tr> 
    @endforeach
        @else
@@ -82,12 +99,12 @@
         ->where('word_number',$tran->word_number)->first();
         @endphp
       <tr>
-       <td>{!! $tran->translation->language->name !!}</td>
+       <td class="translation-text">{!! $tran->translation->language->name !!}</td>
        <td>{!! $tran->surah_number !!}</td>
        <td>{!! $tran->ayah_number !!}</td>
        <td>{!! $tran->word_number !!}</td>
-       <td>{!! $tran->word_text !!}</td>
-       <td>{!! $arabic_word->arabic_text !!}</td>
+       <td class="translation-text">{!! $tran->word_text !!}</td>
+       <td class="arabic-text">{!! $arabic_word->arabic_text !!}</td>
         </tr> 
    @endforeach
 
