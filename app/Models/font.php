@@ -13,6 +13,7 @@ class font extends Model
         'original_filename',
         'file_extension',
         'file_size',
+        'is_active',
     ];
 
     protected static function booted()

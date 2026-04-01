@@ -7,6 +7,7 @@ use App\Models\translation;
 use App\Models\translationWord;
 use App\Models\ArabicWord;
 use App\Models\Category;
+use App\Models\Font;
 use App\Models\translationVerse;
 use App\Models\ArabicVerse;
 
@@ -33,14 +34,14 @@ class HomeController extends Controller
     }
 
    public function show(Request $request){
-    $perPage = 100; // Show 100 records per page
-    $translation=Translation::where('id', $request->id)->first();
-    if($translation->category_id==2){
-        // Word by Word - Paginate the results
+    $perPage = 16;
+    $mainTranslation=Translation::where('id', $request->id)->first();
+    if($mainTranslation->category_id==2){
+        
         $translation = TranslationWord::where('translation_id', $request->id)
                        ->paginate($perPage);
         
-        // Get Arabic words only for current page
+        
         $arabic = ArabicWord::whereIn('surah_number', $translation->pluck('surah_number')->unique())
                    ->whereIn('ayah_number', $translation->pluck('ayah_number')->unique())
                    ->orderBy('surah_number')
@@ -57,7 +58,13 @@ class HomeController extends Controller
                    ->get();
         $flag = 0;
     }
-    return view('translations.index', compact("translation", 'arabic', 'flag'));
+    $fonts=Font::all();
+    // dd(session('default_font_id'));
+        $defaultFont= 3;
+       
+
+
+    return view('translations.index', compact("translation", 'arabic','defaultFont','flag','fonts','mainTranslation'));
 }
 
 

@@ -31,8 +31,12 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/translation">Translations</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/fonts">Fonts</a>
+                    </li>
                 </ul>
             </div>
+
 
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->

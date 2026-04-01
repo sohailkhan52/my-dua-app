@@ -15,12 +15,15 @@ Route::get('/translation', [App\Http\Controllers\TranslationController::class, '
 Route::get('/translation/addtranslation', [App\Http\Controllers\TranslationController::class, 'addTranslation']);
 Route::post('/translation/store', [App\Http\Controllers\TranslationController::class, 'store'])->name('translation.store');
 Route::get('/translation/show/{id}', [App\Http\Controllers\HomeController::class, 'show']);
+Route::get('/fontt/{id}', [App\Http\Controllers\FontController::class, 'changeFont']);
+Route::get('/translation/download/{id}', [App\Http\Controllers\PdfController::class, 'Download'])->name('translation.download');
 Route::get('/translation/edit/{id}', [App\Http\Controllers\TranslationController::class, 'editTranslation']);
 Route::get('/translation/delete/{id}', [App\Http\Controllers\TranslationController::class, 'delete']);
 Route::put('/translation/update/{id}', [App\Http\Controllers\TranslationController::class, 'update'])->name('translation.update');
 
 Route::resource('fonts',App\Http\Controllers\FontController::class);
+    Route::get('fonts/{font}/download', [App\Http\Controllers\FontController::class, 'download'])
+        ->name('fonts.download');
     
 
 
- 

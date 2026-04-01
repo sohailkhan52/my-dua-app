@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('original_filename');
             $table->string('file_extension',10);
             $table->string('file_size')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

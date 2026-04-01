@@ -26,8 +26,20 @@
                     @foreach($fonts as $font)
                     <tr>
                         <td>{!! $font->font_name!!}</td>
-                        <td>Download</td>
-                        <td><a href="{{ route('fonts.edit', $font) }}" class="mx-2 btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a><a href="/delete" class=" btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a></td>
+                        <td>
+                                <a href="{{ route('fonts.download', $font) }}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </td>
+                        <td><a href="{{ route('fonts.edit', $font) }}" class="mx-2 btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                        <form action="{!!route('fonts.destroy',$font)!!}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this font?');">
+                            @csrf
+                            @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> 
+                                    </button>
+                        </form></td>
                     </tr>
                     @endforeach
                 </tbody>

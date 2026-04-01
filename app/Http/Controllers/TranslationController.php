@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\translationWord;
 use App\Models\ArabicWord;
 use App\Models\Category;
+use App\Models\Font;
 use App\Models\TranslationLanguage;
 use App\Models\translationVerse;
 use Illuminate\Support\Facades\Validator;
@@ -23,6 +24,7 @@ class TranslationController extends Controller
         $languages=TranslationLanguage::all();
         return view('translations.home',compact("translations",'categories','languages'));
     }
+
 
     public function addTranslation(){
         $categories=Category::all();
@@ -201,5 +203,11 @@ class TranslationController extends Controller
         return redirect("/translation");
     }
 
+
+    public function getFonts()
+    {
+
+        return view('translation.index',compact('fonts','defaultFont'));
+    }
 
 }

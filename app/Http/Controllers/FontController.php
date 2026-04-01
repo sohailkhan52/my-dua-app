@@ -26,8 +26,8 @@ class FontController extends Controller
      */
     public function create()
     {
-        $flag=1;
-        return view("fonts.create",compact("flag"));
+
+        return view("fonts.create");
     }
 
     /**
@@ -60,14 +60,20 @@ class FontController extends Controller
             ->with('success', 'Font uploaded successfully.');
 
         
-    }
+    } 
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function changeFont(int $id)
     {
-        //
+        $font = Font::find($id);
+        if ($font) {
+            
+            session(['default_font_id' => $font->id]);
+
+        }
+        return back()->with('success', 'Font changed successfully');
     }
 
     /**
@@ -75,22 +81,88 @@ class FontController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $font=Font::find($id);
+      return view('fonts.edit',compact('font'))  ; 
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Font $font)
     {
-        //
+        $request->validate([
+            'font_name'=>'required|string|max:255',
+            'font_file'=>'nullable|file|max:'.$this->maxFileSize,
+        ]);
+
+        $data = ['font_name'=>$request->font_name];
+
+        if($request->hasFile('font_file')){
+            $file =$request->file('font_file');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            if(!in_array($extension,$this->allowedExtensions))
+                {
+                    return back()->withErrors(['font_file'=>'Only TTF, OTF, WOFF, and WOFF2 files are allowed.'])->withInput();
+                }
+
+                if($font->font_path&& Storage::disk('public')->exists($font->font_path)){
+                    Storage::disk('public')->delete($font->font_path);
+                }
+
+                $safeName=Str::slug($request->font_name)?:'font';
+                $fileName=time().'_'.$safeName.uniqid().'.'.$extension;
+                $path=$file->storeAs('fonts',$fileName,'public');
+
+                $data['file_path']=$path;
+                $data['original_filename']=$file->getClientOriginalName();
+                $data['file_extension']=$extension;
+                $data['file_size']=$file->getSize();
+        }
+
+        $font->update($data);
+        return redirect()->route('fonts.index')
+            ->with('success', 'Font updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Font $font)
     {
-        //
+        if($font->font_path  && Storage::disk('public')->exists($font->font_path)){
+             Storage::disk('public')->delete($font->font_path);
+            }
+        $font->delete();
+
+        return redirect()->route('fonts.index')
+            ->with('success', 'Font deleted successfully.');        
     }
+
+public function download(Font $font)
+{
+    if(!$font->font_path){
+        abort(404,'File path not found');
+    }
+
+    if(Storage::disk('public')->exists($font->font_path)){
+        return Storage::disk('public')->download(
+            $font->font_path,
+            $font->original_filename
+        );
+    }
+
+    abort(404,'File not found');
+}
+
+public function saveFontSelection(Request $request)
+{
+    $request->validate([
+        'font_id' => 'nullable|exists:fonts,id'
+    ]);
+    
+    session(['selected_font' => $request->font_id]);
+    
+    return response()->json(['success' => true]);
+}
 }
