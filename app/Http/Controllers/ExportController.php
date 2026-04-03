@@ -33,6 +33,7 @@ class ExportController extends Controller
                     ->where('ayah_number', $tran->ayah_number)
                     ->first();
 
+                //the combined data will store in this $combined array that will be used further
                 $combined[] = [
                     'surah_number'     => $tran->surah_number,
                     'ayah_number'      => $tran->ayah_number,

@@ -25,7 +25,7 @@
             @endif
 
             {{-- Fonts Table --}}
-            <div class="col-md-6 mx-auto">
+            <div class="col-md-8 mx-auto">
                 <table class="table bordered">
                     <thead>
                         <tr>

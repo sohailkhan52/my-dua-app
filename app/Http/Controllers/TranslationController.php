@@ -40,12 +40,12 @@ class TranslationController extends Controller
     {
         // Validate that file exists and is valid JSON
         $request->validate([
-            'file_name' => 'required|file|mimes:json',
+            'file_name' => 'required|file|mimetypes:application/json,text/plain',
         ],
             [
-                'file_name.required' => 'Please upload a file.',
-                'file_name.file'     => 'The uploaded item must be a valid file.',
-                'file_name.mimes'    => 'Only JSON files are allowed.',
+                'file_name.required'  => 'Please upload a file.',
+                'file_name.file'      => 'The uploaded item must be a valid file.',
+                'file_name.mimetypes' => 'Only JSON files are allowed.',
             ]
         );
         $file    = $request->file('file_name');
@@ -62,6 +62,23 @@ class TranslationController extends Controller
 
         // Store file in storage
         $path = $file->store('translations');
+        // Build full path to stored JSON file
+        $jsonPath = storage_path("app\private/$path");
+
+        //first get contents then decoded it into an array
+        $jsonData = json_decode(file_get_contents($jsonPath), true);
+
+        //the below condition will check the file structure on the bases of ayah and surah or word
+        foreach ($jsonData as $key => $value) {
+            if (! preg_match('/^\d+:\d+(:\d+)?$/', $key)) {
+                return back()->withErrors([
+                    'file' => "Invalid file format:",
+                ]);
+            }
+        }
+        $count     = 0;
+        $batch     = [];
+        $batchSize = 1000;
         try {
             // Create translation record in database
             $translation = Translation::create([
@@ -75,25 +92,19 @@ class TranslationController extends Controller
                 "updated_at"      => now(),
             ]);
 
-
             if (! $translation) {
                 return " translation language not found!";
             }
 
-            // Build full path to stored JSON file
-            $jsonPath = storage_path("app\private/$path");
-
-            //first get contents then decoded it into an array
-            $jsonData  = json_decode(file_get_contents($jsonPath), true);
-            $count     = 0;
-            $batch     = [];
-            $batchSize = 1000;
-
             // Handle Verse-level translations (category_id = 1)
-            if ($request->category_id == 1) {
+            if ($translation->category->slug == "ayah-by-ayah") {
 
                 foreach ($jsonData as $key => $verse) {
-
+                    if (! preg_match('/^\d+:\d+$/', $key)) {
+                        return back()->withErrors([
+                            'file' => "Plz select ayah by ayah file in place of word by word file for this category",
+                        ]);
+                    }
                     // Parse key format: "surah:ayah"
                     $parts = explode(':', $key);
                     $surah = (int) $parts[0];
@@ -144,11 +155,15 @@ class TranslationController extends Controller
                 }
 
             }
-            // Handle Word-by-word translations (category_id = 2)
+            // Handle Word-by-word translations ($translation->category->slug=="ayah-by-ayah")
             else {
 
                 foreach ($jsonData as $key => $word) {
-
+                    if (! preg_match('/^\d+:\d+:\d+$/', $key)) {
+                        return back()->withErrors([
+                            'file' => "Plz select word by word  file in place of ayah by ayah file for this category.",
+                        ]);
+                    }
                     // Parse key format: "surah:ayah:wordNumber"
                     $parts      = explode(':', $key);
                     $surah      = (int) $parts[0];
@@ -203,11 +218,6 @@ class TranslationController extends Controller
                     }
                 }
 
-                // Insert any remaining records
-                if (! empty($batch)) {
-                    DB::table('translation_words')->insert($batch);
-                }
-
             }
 
             return redirect("/translation");
@@ -236,7 +246,7 @@ class TranslationController extends Controller
     public function update(Request $request)
     {
         $translation = Translation::where("id", $request->id)->first();
-        $translation = $translation->update(["translator_name" => ucwords($request->translator_name), "language" => $request->language, "category_id" => $request->category_id]);
+        $translation = $translation->update(["translator_name" => ucwords($request->translator_name), "language_id" => $request->language_id, "category_id" => $request->category_id]);
 
         return redirect("/translation");
     }

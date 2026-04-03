@@ -41,11 +41,10 @@ class HomeController extends Controller
     {
         // Number of records per page for pagination
         $perPage = 16;
-
         // Fetch the main translation record
         $mainTranslation = Translation::where('id', $request->id)->first();
         // Check if translation is word-by-word (category_id = 2) or verse-by-verse
-        if ($mainTranslation->category_id == 2) {
+        if ($mainTranslation->category->slug=="word-by-word") {
             // WORD-BY-WORD TRANSLATION
             // Fetch paginated word translations
             $translation = TranslationWord::where('translation_id', $request->id)
@@ -58,8 +57,8 @@ class HomeController extends Controller
                 ->orderBy('ayah_number')
                 ->orderBy('word_number')
                 ->get();
-            $flag = 1;
-        } else {
+            $flag = 1;//this flag will help to identify the category type
+        } elseif($mainTranslation->category->slug=="ayah-by-ayah") {
             // VERSE-BY-VERSE TRANSLATION
             // Fetch paginated verse translations
             $translation = TranslationVerse::where('translation_id', $request->id)
@@ -69,7 +68,7 @@ class HomeController extends Controller
             $arabic = ArabicVerse::whereIn('surah_number', $translation->pluck('surah_number')->unique())
                 ->whereIn('ayah_number', $translation->pluck('ayah_number')->unique())
                 ->get();
-            $flag = 0;
+            $flag = 0;//this flag will help to identify the category type
         }
 
         // Fetch all available fonts from database
