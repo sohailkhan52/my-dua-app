@@ -7,7 +7,21 @@
 
     {{-- Center the form on the page using 6-column width on medium screens --}}
     <div class="col-md-6 mx-auto">
-        
+                {{-- Success Message --}}
+                @if(session('success'))
+                    <div class="alert alert-success">{{ session('success') }}</div>
+                @endif
+
+                {{-- Validation Errors --}}
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
         {{-- CREATE MODE (flag == 1) --}}
         @if($flag == 1)
         <div class="card">
@@ -88,7 +102,7 @@
 
             </div> {{-- end card-body --}}
         </div> {{-- end card --}}
-        
+
         {{-- EDIT MODE (flag == 0) --}}
         @else
         <div class="card">
@@ -106,7 +120,7 @@
                 @endif
 
                 {{-- Edit Translation Form --}}
-                <form action="{{ route('translation.update', $translation->id) }}" method="POST">
+                <form action="{{ route('translation.update', $translation->id) }}" method="POST" enctype="multipart/form-data">
 
                     @csrf
                     @method('PUT')
@@ -142,6 +156,11 @@
                             @endforeach
                         </select>
                     </div>
+                    {{-- JSON File Upload --}}
+                    <div class="mb-3">
+                        <label>File Name</label>
+                        <input type="file" name="file_name"  class="form-control" >
+                    </div>
 
                     {{-- Submit Button --}}
                     <button type="submit" class="btn btn-primary">
@@ -153,8 +172,8 @@
             </div> {{-- end card-body --}}
         </div> {{-- end card --}}
         @endif
-        
+
     </div> {{-- end col-md-6 --}}
-    
+
 </div> {{-- end container-fluid --}}
 @endsection

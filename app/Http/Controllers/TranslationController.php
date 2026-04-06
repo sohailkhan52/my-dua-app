@@ -5,13 +5,96 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Translation;
 use App\Models\TranslationLanguage;
+use App\Models\TranslationVerse;
+use App\Models\TranslationWord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class TranslationController extends Controller
 {
+
+    /**
+     * this function will help to both update and store function to store translation file in database 
+     */
+    private function processTranslationFile($translation, $file)
+    {
+        $content = file_get_contents($file->getRealPath());
+
+        // Validate JSON
+        json_decode($content);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('Invalid JSON file');
+        }
+
+        $jsonData = json_decode($content, true);
+
+        foreach ($jsonData as $key => $value) {
+            if (! preg_match('/^\d+:\d+(:\d+)?$/', $key)) {
+                throw new \Exception('Invalid file format');
+            }
+        }
+
+        $batch     = [];
+        $batchSize = 1000;
+
+        // delete old data
+        TranslationVerse::where('translation_id', $translation->id)->delete();
+        TranslationWord::where('translation_id', $translation->id)->delete();
+
+        if ($translation->category->slug == "ayah-by-ayah") {
+
+            foreach ($jsonData as $key => $verse) {
+
+                $parts = explode(':', $key);
+
+                $batch[] = [
+                    'translation_id' => $translation->id,
+                    'surah_number'   => (int) $parts[0],
+                    'ayah_number'    => (int) $parts[1],
+                    'verse_text'     => $verse['t'],
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ];
+            }
+
+            if (! empty($batch)) {
+                DB::table('translation_verses')->insert($batch);
+            }
+
+        } else {
+
+            foreach ($jsonData as $key => $word) {
+
+                if (! preg_match('/^\d+:\d+:\d+$/', $key)) {
+                    throw new \Exception('Invalid word format');
+                }
+
+                $parts = explode(':', $key);
+
+                $text = is_array($word) ? ($word['t'] ?? null) : $word;
+
+                $batch[] = [
+                    'translation_id' => $translation->id,
+                    'surah_number'   => (int) $parts[0],
+                    'ayah_number'    => (int) $parts[1],
+                    'word_number'    => (int) $parts[2],
+                    'word_text'      => $text,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ];
+
+                if (count($batch) >= $batchSize) {
+                    DB::table('translation_words')->insert($batch);
+                    $batch = [];
+                }
+            }
+
+            if (! empty($batch)) {
+                DB::table('translation_words')->insert($batch);
+            }
+        }
+    }
     /**
      * Display the main translations listing page where user can select the translation
      */
@@ -54,9 +137,7 @@ class TranslationController extends Controller
         // Check if JSON is valid
         json_decode($content);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return back()->withErrors(['file' => 'The file must contain valid JSON.']);
-        }
+
         $file      = $request->file('file_name');
         $file_name = $file->getClientOriginalName();
 
@@ -95,134 +176,12 @@ class TranslationController extends Controller
             if (! $translation) {
                 return " translation language not found!";
             }
-
-            // Handle Verse-level translations (category_id = 1)
-            if ($translation->category->slug == "ayah-by-ayah") {
-
-                foreach ($jsonData as $key => $verse) {
-                    if (! preg_match('/^\d+:\d+$/', $key)) {
-                        return back()->withErrors([
-                            'file' => "Plz select ayah by ayah file in place of word by word file for this category",
-                        ]);
-                    }
-                    // Parse key format: "surah:ayah"
-                    $parts = explode(':', $key);
-                    $surah = (int) $parts[0];
-                    $ayah  = (int) $parts[1];
-                    $verse = $verse['t'];
-                    $data  = [
-                        'surah' => $surah,
-                        'ayah'  => $ayah,
-                        'verse' => $verse,
-                    ];
-
-                    // Validate each record
-                    $validator = Validator::make($data, [
-                        'surah' => 'required|integer|min:1|max:114',
-                        'ayah'  => 'required|integer|min:1',
-                        'verse' => 'required|string',
-                    ], [
-                        // Custom messages
-                        'verse.required' => 'verse required.',
-                        'verse.integer'  => 'verse must be a string.',
-                        'ayah.required'  => 'ayah number is required.',
-                        'ayah.integer'   => 'ayah must be a number.',
-                        'ayah.min'       => 'ayah number must be greater than 0.',
-                        'surah.required' => 'Surah number is required.',
-                        'surah.integer'  => 'Surah must be a number.',
-                        'surah.min'      => 'Surah number must be greater than 0.',
-                        'surah.max'      => 'Surah number must be less than or equal to 114.',
-                    ]
-                    );
-
-                    if ($validator->fails()) {
-                        return back()->withErrors($validator);
-                    }
-
-                    // Prepare batch  data in aligned manner that can be stored easily
-                    $batch[] = [
-                        'translation_id' => $translation->id,
-                        'surah_number'   => $surah,
-                        'ayah_number'    => $ayah,
-                        'verse_text'     => $verse,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ];
-                }
-                // Insert all verse records at once
-                if (! empty($batch)) {
-                    DB::table('translation_verses')->insert($batch);
-                }
-
-            }
-            // Handle Word-by-word translations ($translation->category->slug=="ayah-by-ayah")
-            else {
-
-                foreach ($jsonData as $key => $word) {
-                    if (! preg_match('/^\d+:\d+:\d+$/', $key)) {
-                        return back()->withErrors([
-                            'file' => "Plz select word by word  file in place of ayah by ayah file for this category.",
-                        ]);
-                    }
-                    // Parse key format: "surah:ayah:wordNumber"
-                    $parts      = explode(':', $key);
-                    $surah      = (int) $parts[0];
-                    $ayah       = (int) $parts[1];
-                    $wordNumber = (int) $parts[2];
-                    $data       = [
-                        'surah'      => $surah,
-                        'ayah'       => $ayah,
-                        'wordNumber' => $wordNumber,
-                        'word'       => $word,
-                    ];
-                    // Validate each record
-                    $validator = Validator::make($data, [
-                        'surah'      => 'required|integer|min:1|max:114',
-                        'ayah'       => 'required|integer|min:1',
-                        'wordNumber' => 'required|integer|min:1',
-                        'word'       => 'required|string',
-                    ], [
-                        // Custom messages
-                        'word.required'       => 'word required.',
-                        'word.integer'        => 'word must be a string.',
-                        'wordNumber.required' => 'wordNumber number is required.',
-                        'wordNumber.integer'  => 'wordNumber must be a number.',
-                        'wordNumber.min'      => 'wordNumber number must be greater than 0.',
-                        'ayah.required'       => 'ayah number is required.',
-                        'ayah.integer'        => 'ayah must be a number.',
-                        'ayah.min'            => 'ayah number must be greater than 0.',
-                        'surah.required'      => 'Surah number is required.',
-                        'surah.integer'       => 'Surah must be a number.',
-                        'surah.min'           => 'Surah number must be greater than 0.',
-                        'surah.max'           => 'Surah number must be less than or equal to 114.',
-                    ]
-                    );
-
-                    if ($validator->fails()) {
-                        return back()->withErrors($validator);
-                    }
-                    // Prepare batch  data in aligned manner that can be stored easyly
-                    $batch[] = [
-                        'translation_id' => $translation->id,
-                        'surah_number'   => $surah,
-                        'ayah_number'    => $ayah,
-                        'word_number'    => $wordNumber,
-                        'word_text'      => $word,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ];
-                    // Insert in batches to avoid memory overflow
-                    if (count($batch) >= $batchSize) {
-                        DB::table('translation_words')->insert($batch);
-                        $batch = [];
-                    }
-                }
-
-            }
+// the below like is call the processTranslation File by passing the params
+            $this->processTranslationFile($translation, $file);
 
             return redirect("/translation");
         } catch (\Throwable $th) {
-            //throw $th;
+            return back()->withErrors(['error' => $th->getMessage()]);
         }
     }
     /**
@@ -245,10 +204,82 @@ class TranslationController extends Controller
      */
     public function update(Request $request)
     {
+        // these lines of code will will get the translation according to  the requested id
         $translation = Translation::where("id", $request->id)->first();
-        $translation = $translation->update(["translator_name" => ucwords($request->translator_name), "language_id" => $request->language_id, "category_id" => $request->category_id]);
 
+        // this condition will check if that the changing categroy should have file to replace
+        if ($translation->category_id != $request->category_id && ! $request->hasFile('file_name')) {
+            return back()->withErrors([
+                'file' => 'Please upload file too when category changes.',
+            ]);
+        }
+
+        if ($translation) {
+
+            try {
+                // these lines of code will update the name, language and category of the translation
+                $translation->update(["translator_name" => ucwords($request->translator_name), "language_id" => $request->language_id, "category_id" => $request->category_id, "updated_at" => now()]);
+
+                // if request has file the these lines will adjust them
+                if ($request->hasFile('file_name')) {
+                    // these lines will validate the files
+                    $request->validate([
+                        'file_name' => 'file|mimetypes:application/json,text/plain',
+                    ],
+                        [
+                            'file_name.file'      => 'The uploaded item must be a valid file.',
+                            'file_name.mimetypes' => 'Only JSON files are allowed.',
+                        ]
+                    );
+
+                    $file    = $request->file('file_name');
+                    $content = file_get_contents($file->getRealPath());
+
+                    // Check if JSON is valid
+                    json_decode($content);
+                    $file      = $request->file('file_name');
+                    $file_name = $file->getClientOriginalName();
+
+                    // Store file in storage
+                    $path = $file->store('translations');
+                    // Build full path to stored JSON file
+                    $jsonPath = storage_path("app\private/$path");
+
+                    //first get contents then decoded it into an array
+                    $jsonData = json_decode(file_get_contents($jsonPath), true);
+
+                    //the below condition will check the file structure on the bases of ayah and surah or word
+                    foreach ($jsonData as $key => $value) {
+                        if (! preg_match('/^\d+:\d+(:\d+)?$/', $key)) {
+                            return back()->withErrors([
+                                'file' => "Invalid file format:",
+                            ]);
+                        }
+                    }
+                    $count     = 0;
+                    $batch     = [];
+                    $batchSize = 1000;
+
+                    Storage::delete($translation->file_path); // Delete file from storage
+
+                    // the below like is call the processTranslation File by passing the params
+                    $this->processTranslationFile($translation, $file);
+
+                    // these lines of code will update the file_name, file_path and file_size of the translation
+                    $translation->update([
+                        "file_name" => $file->getClientOriginalName(),
+                        "file_path" => $path,
+                        "file_size" => $file->getSize(),
+                    ]);
+
+                }
+            } catch (\Throwable $th) {
+                return back()->withErrors(['error' => $th->getMessage()]);
+            }
+
+        }
         return redirect("/translation");
+
     }
     /**
      * Delete a translation and its associated file

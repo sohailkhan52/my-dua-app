@@ -24,7 +24,7 @@
                     @foreach($fonts as $font)
                         <li data-path="{{ asset('storage/'.$font->font_path) }}">
                             <a href="/fontt/{{ $font->id }}">
-                                {{ $font->font_name }}
+                                {{ ucfirst(strToLower($font->font_name))}}
                             </a>
                         </li>
                     @endforeach

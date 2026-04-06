@@ -158,6 +158,7 @@ class FontController extends Controller
             // Delete old font file if exists
             if ($font->font_path && Storage::disk('public')->exists($font->font_path)) {
                 Storage::disk('public')->delete($font->font_path);
+
             }
 
             // Generate new filename and store file
@@ -187,9 +188,12 @@ class FontController extends Controller
     public function destroy(Font $font)
     {
         // Delete physical font file from storage
-        if ($font->font_path && Storage::disk('public')->exists($font->font_path)) {
-            Storage::disk('public')->delete($font->font_path);
-        }
+            // Delete old font file if exists
+            if ($font->font_path && Storage::disk('public')->exists($font->font_path)) {
+                $true=Storage::disk('public')->delete($font->font_path);
+                
+
+            }
         // Delete database record
         $font->delete();
 
