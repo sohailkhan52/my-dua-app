@@ -1,73 +1,120 @@
 <?php
+namespace App\Http\Controllers\Api;
 
-namespace App\Http\Controllers;
+use App\Http\Controllers\Controller; // ✅ IMPORTANT
+use App\Models\User;
 use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use App\Models\User;
+
 class AuthController extends Controller
 {
-           /**
+    /**
      * API Login (JWT)
      */
     public function login(Request $request)
     {
-       
-    $validate = Validator::make($request->all(),[
-      'email'=>'required|email',
-      'password'=>'required|string|min:8',
-    ]);
-    if($validate->fails()){
-      return response()->json([
-         'status'=>'error',
-         'errors'=>$validate->errors(),
-      ],422);
-    }
+        // validates  email and password from the Api request
+        $validate = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required|string|min:8',
+        ]);
+        if ($validate->fails()) {
+            return response()->json([
+                'status' => false,
+                'errors' => $validate->errors(),
+            ], 422);
+        }
+        //Gather user credential that will be compaired with the credentials present in the token in database
+        $credentials = $request->only("email", 'password');
 
-    $credentials=$request->only("email",'password');
-        $user = User::where("email", $request->email)->first();
-            if (!$user||!$user->hasRole('admin')) {
-
-            auth()->logout();
+        if (! $token = auth('api')->attempt($credentials)) {
 
             return response()->json([
-               'error'=>"Only admin can login"
+                "status" => false,
+                'error'  => "Invalid Credentials",
             ]);
         }
-    $token=auth('api')->attempt($credentials);
 
-    $ttl=auth('api')->factory()->getTTL();
+        $ttl = auth('api')->factory()->getTTL();
 
-    $expiresAt=now()->addMinutes($ttl);
-    $user = auth("api")->user();
-    $user->update([
-      'token'=>$token,
-      'token_expires'=>$expiresAt,
-    ]);
-    return response()->json([
-            'status' => 'success',
-            'user'   => auth('api')->user(),
+        $expiresAt = now()->addMinutes($ttl);
+        $user      = auth("api")->user();
+        $user->update([
+            'token'         => $token,
+            'token_expires' => $expiresAt,
+        ]);
+        return response()->json([
+            'status'        => true,
+            'user'          => auth('api')->user(),
             'authorization' => [
                 'token' => $token,
                 'type'  => 'bearer',
             ],
-          
+
         ]);
     }
+    /**
+     * API Register (JWT)
+     */
+    public function register(Request $request)
+    {
 
-        public function user()
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            "email"    => "required|email|unique:users",
+            "password" => "required|string|min:8|confirmed",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                "status " => false,
+                "error "  => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::create([
+            "name"     => strtolower($request->name),
+            "email"    => $request->email,
+            "password" => Hash::make($request->password),
+        ]);
+
+        $user->assignRole('user');
+
+        $token     = auth("api")->login($user);
+        $ttl       = auth("api")->factory()->getTTL();
+        $expiresAt = now()->addMinutes($ttl);
+
+        $user->update([
+            "token"         => $token,
+            "token_expires" => $expiresAt,
+        ]);
+
+        return response()->json([
+            "Status"        => true,
+            "Message"       => "User registered successfully",
+            "user"          => $user,
+            "authorization" => [
+                'token' => $token,
+                "type"  => "bearer",
+            ],
+        ], 201);
+    }
+
+    public function user()
     {
         return response()->json(auth('api')->user());
     }
 
     public function logout()
     {
-      auth("api")->logout();
 
-      return response()->json([
-         'status'=>'success',
-         'message'=>'Successfully logged out'
-      ]);
+        $user = User::where("id", auth('api')->id())->first();
+
+        $user->update(["token" => ""]);
+        return response()->json([
+            'status'  => true,
+            'message' => 'Successfully logged out',
+        ]);
     }
 }
