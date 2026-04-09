@@ -53,6 +53,13 @@ class TaskController extends Controller
     {
 
         $tasks = $this->user()->tasks()->latest()->get();
+        if($tasks->isEmpty()){
+        return response()->json([
+            'status'  => true,
+            "message" => "there is no task for you",
+            "data"    => [],
+        ]);
+        }
         return response()->json([
             'status'  => true,
             "message" => "Tasks Retrieved Successfully",
