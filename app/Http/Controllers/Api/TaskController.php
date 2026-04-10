@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Events\TaskCreated;
 
 class TaskController extends Controller
 {
@@ -93,10 +94,12 @@ class TaskController extends Controller
             'due_date'    => $request->due_date,
         ]);
 
+        event(new TaskCreated($task));
+        
         return response()->json([
             "status"  => true,
             "message" => "Task created Successfully",
-            "data"    => $task,
+            "data"    => $task->only(['id','title','description','status','user_id','due_date','created_at','updated_at']),
         ], 201);
 
     }
