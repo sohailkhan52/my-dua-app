@@ -11,4 +11,7 @@
     </div>
 </div>
         @endrole
+                   @auth
+    @livewire('chat')
+@endauth
 @endsection

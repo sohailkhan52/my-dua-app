@@ -23,6 +23,10 @@
     text-decoration: none;
 }
 </style>
+    @livewireStyles
+    @stack('styles')
+    @livewireScripts
+    @stack('scripts')
 </head>
 <body>
     <div id="app">
@@ -88,6 +92,7 @@
         <main class="py-4">
             @yield('content')
         </main>
+
     </div>
 </body>
 </html>

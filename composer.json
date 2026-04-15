@@ -14,8 +14,10 @@
         "barryvdh/laravel-dompdf": "*",
         "barryvdh/laravel-snappy": "*",
         "laravel/framework": "^12.0",
+        "laravel/reverb": "*",
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "*",
+        "livewire/livewire": "*",
         "spatie/laravel-permission": "*",
         "tymon/jwt-auth": "*"
     },

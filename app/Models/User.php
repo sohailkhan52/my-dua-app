@@ -70,4 +70,58 @@ class User extends Authenticatable implements JWTSubject  // ← ADD THIS
         public function tasks(){
         return $this->HasMany(Task::class);
     }
+
+    //---->chat used function
+
+    public function sentMessage()
+    {
+        return $this->hasMany(ChatMessage::class,'from_user_id');
+    }
+    public function recievedMessage()
+    {
+        return $this->hasMany(ChatMessage::class,'to_user_id');
+    }
+    public function getUnreadMessagesCount()
+    {
+        return $this->recievedMessage()->where('is_read',false)->count();
+    }
+
+    public function getConversations()
+    {
+        $userId = $this->id;
+
+        $conversationUsers=ChatMessage::where('from_user_id',$userId)
+        ->orWhere('to_user_id',$userId)
+        ->with(['sender','reciever'])
+        ->get()
+        ->map(function($message)use ($userId){
+            return $message->from_user_id==$userId  ?
+            $message->receiver: $message->sender;
+        })
+        ->unique('id')
+        ->values();
+
+        $conversations=[];
+
+        foreach ($conversations as $user) {
+            $lastMessage =ChatMessage::where(function($q) use ($userId,$user){
+                $q->where('from_user_id',$userId)->where('to_user_id');
+                })->orWhere(function($q) use ($userId,$user){
+                    $q->where('from_user_id',$userId)->where('to_user_id',$userId);
+                    })->latest()->first();
+
+                    $unreadCount = ChatMessage::where('from_user_id',$user->id)
+                    ->where('to_user_id',$userId)
+                    ->where("is_read",false)->count();
+                    $conversations[]=[
+                        'user'=>$user,
+                        'last_message'=>$lastMessage,
+                        'unread_count'=>$unreadCount,
+                    ];
+                }
+                return $conversations;
+        }
+    
+
+    //chat used function<---
 }
