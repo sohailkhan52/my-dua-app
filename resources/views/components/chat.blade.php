@@ -154,3 +154,23 @@
         </div>
     </div>
 </div>
+<script>
+    // Auto-scroll messages container to the bottom
+    function scrollToBottom() {
+        const container = document.getElementById('messagesContainer');
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    // Scroll on initial load
+    document.addEventListener('DOMContentLoaded', scrollToBottom);
+
+    // Scroll whenever Livewire re-renders the component
+    document.addEventListener('livewire:navigated', scrollToBottom);
+    Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+        succeed(({ snapshot, effect }) => {
+            requestAnimationFrame(scrollToBottom);
+        });
+    });
+</script>

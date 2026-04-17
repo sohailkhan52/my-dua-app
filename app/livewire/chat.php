@@ -32,7 +32,7 @@ class Chat extends Component
     {
         // Initialize component by loading users and unread message count
         $this->loadUsers();
-        $this->conversations = [];
+        $this->loadConversations();
         $this->unreadCount = Auth::user()->getUnreadMessagesCount() ?? 0;
     }
 
@@ -168,7 +168,7 @@ class Chat extends Component
         try {
             return [
                 // Listen for private channel events specific to current user
-                'echo-private:user.' . Auth::id() . ',message.sent' => 'handleNewMessage',
+                'echo-private:user.' . Auth::id() . ',.message.sent' => 'handleNewMessage',
                 'refreshChat' => '$refresh',
             ];
         } catch (\Exception $e) {
