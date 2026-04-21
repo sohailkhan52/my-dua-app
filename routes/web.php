@@ -15,7 +15,7 @@ Route::get('/', function () {
 Auth::routes();
 // Chat route (if you want a dedicated page)
 Route::middleware(['auth'])->group(function () {
-    Route::view('/chat', 'components.chat')->name('chat');
+    Route::view('/chat', 'chat')->name('chat');
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/translation', [TranslationController::class, 'index']);
 Route::get('/translation/addtranslation', [TranslationController::class, 'addTranslation']);

@@ -28,6 +28,9 @@ class Chat extends Component
     
     // Total count of unread messages across all conversations
     public $unreadCount = 0;
+    
+    // Total unread messages across all conversations
+    public $unread = "";
 
     public function mount()
     {
@@ -35,6 +38,8 @@ class Chat extends Component
         $this->loadUsers();
         $this->loadConversations();
         $this->unreadCount = Auth::user()->getUnreadMessagesCount() ?? 0;
+        $this->unread =ChatMessage::where('to_user_id', auth()->id())
+          ->where('is_read', false)->get();
     }
 
     /**
@@ -68,7 +73,31 @@ class Chat extends Component
         $this->selectedUser = User::find($userId);
         $this->loadMessages();
     }
-
+/**
+ * Mark  message as read when it becomes visible
+ */
+public function markMessageAsRead($messageId)
+{
+    $message = ChatMessage::find($messageId);
+    
+    if ($message && $message->to_user_id == Auth::id() && !$message->is_read) {
+        $message->update([
+            'is_read' => true,
+            'read_at' => now(),
+        ]);
+        
+        // Broadcast to sender
+        try {
+            broadcast(new MessageRead($message->from_user_id, Auth::id()));
+        } catch (\Exception $e) {
+            \Log::error('MessageRead broadcast failed: ' . $e->getMessage());
+        }
+        
+        $this->loadMessages();
+        $this->unreadCount = Auth::user()->getUnreadMessagesCount();
+        $this->loadConversations();
+    }
+}
     /**
      * Load all messages between current user and selected user
      */
@@ -130,40 +159,6 @@ class Chat extends Component
 
         // Dispatch event to notify other components
         $this->dispatch('message-sent');
-    }
-
-    /**
-     * Mark all unread messages from selected user as read
-     */
-    public function markMessagesAsRead()
-    {
-        // Guard clause: return if no user is selected
-        if (!$this->selectedUser) {
-            return;
-        }
-
-        // Update unread messages from selected user to current user
-        ChatMessage::where('from_user_id', $this->selectedUser->id)
-            ->where('to_user_id', Auth::id())
-            ->where('is_read', false)
-            ->update([
-                'is_read' => true,
-                'read_at' => now(),
-            ]);
-
-        // Broadcast read receipt to the original sender in real-time
-        try {
-            broadcast(new MessageRead($this->selectedUser->id, Auth::id()));
-        } catch (\Exception $e) {
-            \Log::error('MessageRead broadcast failed: ' . $e->getMessage());
-        }
-
-        // Refresh unread count and conversations
-        $this->unreadCount = Auth::user()->getUnreadMessagesCount();
-        $this->loadConversations();
-
-        // Dispatch event to notify other components
-        $this->dispatch('messages-read');
     }
 
     /**

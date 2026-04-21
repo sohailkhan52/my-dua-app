@@ -11,7 +11,14 @@
     </div>
 </div>
         @endrole
-                   @auth
-    @livewire('chat')
-@endauth
+        @role("user")
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+        <h3 class=mx-auto>user dashboard</h3>
+        </div>
+    </div>
+</div>
+        @endrole
 @endsection
