@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Events\MessageSent;
+use App\Events\MessageRead;
 use App\Models\ChatMessage;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -66,7 +67,6 @@ class Chat extends Component
     {
         $this->selectedUser = User::find($userId);
         $this->loadMessages();
-        $this->markMessagesAsRead();
     }
 
     /**
@@ -87,6 +87,7 @@ class Chat extends Component
             $q->where('from_user_id', $this->selectedUser->id)
                 ->where('to_user_id', Auth::id());
         })->with('sender')->orderBy('created_at', 'asc')->get();
+        
     }
 
     /**
@@ -150,6 +151,13 @@ class Chat extends Component
                 'read_at' => now(),
             ]);
 
+        // Broadcast read receipt to the original sender in real-time
+        try {
+            broadcast(new MessageRead($this->selectedUser->id, Auth::id()));
+        } catch (\Exception $e) {
+            \Log::error('MessageRead broadcast failed: ' . $e->getMessage());
+        }
+
         // Refresh unread count and conversations
         $this->unreadCount = Auth::user()->getUnreadMessagesCount();
         $this->loadConversations();
@@ -167,12 +175,13 @@ class Chat extends Component
     {
         try {
             return [
-                // Listen for private channel events specific to current user
+                // Listen for incoming messages on current user's private channel
                 'echo-private:user.' . Auth::id() . ',.message.sent' => 'handleNewMessage',
+                // Listen for read receipts — fires when the other user reads our messages
+                'echo-private:user.' . Auth::id() . ',.message.read' => 'handleMessageRead',
                 'refreshChat' => '$refresh',
             ];
         } catch (\Exception $e) {
-            // Fallback listeners if authentication fails during listener setup
             return [
                 'refreshChat' => '$refresh',
             ];
@@ -190,7 +199,6 @@ class Chat extends Component
         if ($this->selectedUser && isset($payload['from_user_id']) && $payload['from_user_id'] == $this->selectedUser->id) {
             // If message is from currently selected user, load messages and mark as read
             $this->loadMessages();
-            $this->markMessagesAsRead();
         } else {
             // Otherwise just update conversations and unread count
             $this->loadConversations();
@@ -200,6 +208,19 @@ class Chat extends Component
 
         // Dispatch event to notify about received message
         $this->dispatch('message-received');
+    }
+
+    /**
+     * Handle real-time read receipts — fires when the recipient reads our messages.
+     *
+     * @param array $payload  Contains from_user_id (us) and to_user_id (the reader)
+     */
+    public function handleMessageRead($payload)
+    {
+        // Reload messages so the ✓✓ Read indicator updates instantly for the sender
+        if ($this->selectedUser && isset($payload['to_user_id']) && $payload['to_user_id'] == $this->selectedUser->id) {
+            $this->loadMessages();
+        }
     }
 
     /**
