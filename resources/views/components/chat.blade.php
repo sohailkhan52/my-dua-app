@@ -7,8 +7,10 @@
                 <h5 class="mb-0">💬 Real-time Chat</h5>
                 <!-- Display unread message count badge if there are any unread messages -->
 
-                @if($unread->count() > 0)
-                    <button data-bs-toggle="modal" data-bs-target="#unread-user" class="badge bg-danger rounded-pill">{{ $unreadCount}}</button>
+                @if($unreadCount > 0)
+                <div data-bs-toggle="modal" data-bs-target="#unread-user">
+                    Unread <button  class="badge bg-danger rounded-pill">{{ $unreadCount}}</button>
+                </div>
                 @endif
             </div>
         </div>
@@ -34,7 +36,7 @@
                                             </div>
                                         </div>
                                         <div class="flex-grow-1 ms-3">
-                                            <div class="fw-bold">{{ $user->name }}
+                                            <div class="fw-bold">{{ ucfirst($user->name) }}
                                                 @php
                                                 $count = $user->sentMessage()
                                                     ->where('to_user_id', auth()->id())
@@ -61,7 +63,7 @@
                         <div class="p-3 border-bottom bg-white">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <strong class="fs-5">{{ $selectedUser->name }}</strong>
+                                    <strong class="fs-5">{{ ucfirst($selectedUser->name) }}</strong>
                                 </div>
                             </div>
                         </div>
@@ -76,9 +78,9 @@
                                          style="max-width: 70%;">
                                         <!-- Message Header: Sender Name and Time -->
                                         <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <strong class="small">{{ $message->sender->name }}</strong>
+                                            <strong class="small">{{ ucfirst($message->sender->name) }}</strong>
                                             <small class="{{ $message->from_user_id == auth()->id() ? 'text-white-50' : 'text-muted' }} ms-2">
-                                                {{ $message->created_at->format('H:i') }}
+                                                {{ $message->created_at->format('h:i:a') }}
                                             </small>
                                         </div>
                                         <!-- Message Content -->
@@ -130,7 +132,7 @@
         </div>
     </div>
 
-<div class="modal fade" id="unread-user">
+<div class="modal mt-5" id="unread-user">
     <div class="modal-dialog modal-dialog-right">
         <div class="modal-content">
             <div class="modal-header">
@@ -148,7 +150,7 @@
                                 <button data-bs-dismiss="modal"
                                    class="list-group-item list-group-item-action  {{ $selectedUser && $selectedUser->id == $user->id ? 'active' : '' }}"
                                    wire:click="selectUser({{ $user->id }})">
-                                             {{$user->name}} <span class="badge bg-danger rounded-pill">{{ $unRead->count()}}</span>
+                                             {{ucfirst($user->name)}} <span class="badge bg-danger rounded-pill">{{ $unRead->count()}}</span>
                                         
                                 </button>   
 

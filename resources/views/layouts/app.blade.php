@@ -25,6 +25,18 @@
     color: inherit;
     text-decoration: none;
 }
+
+.modal-dialog-right {
+    position: fixed;
+    right: 0;
+    margin: 0;
+    max-width: 400px;
+}
+
+.modal-dialog-right  {
+    height: 50%;
+    border-radius: 0;
+}
 </style>
     @livewireStyles
     @stack('styles')
