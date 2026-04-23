@@ -1,15 +1,44 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\TranslationController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FontController;
+use App\Http\Controllers\SubscriptionController;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+// ----STRIPE ROUTES--------- -->
+// Any active subscription required 
+Route::get('/dashboard',function (){ return view('dashboard');})->middleware('subscribed');
+Route::get('/premium-feature',function (){ return view('premium');})->middleware('subscribed:premium');
+
+
+//public pricing page
+Route::get('/pricing',[SubscriptionController::class,"index"])->name("pricing");
+
+// Subscription management (requires authentication)
+Route::middleware(['auth'])->group(function (){
+    // checkout 
+    Route::post('/subscription/checkout',[SubscriptionController::class,"checkout"])->name('subscription.checkout');
+    Route::get('/subscription/success',[SubscriptionController::class,"success"])->name('subscription.success');
+    Route::get('/subscription/cancel',[SubscriptionController::class,"cancel"])->name('subscription.cancel');
+
+    //plan changes
+    Route::put('/subscription/plan',[SubscriptionController::class,'changePlan'])->name('subscription.change-plan');
+
+    //cancel and resourcebundle_get_error_message
+    Route::delete('/subscription',[SubscriptionController::class,'cancelSubscription'])->name('subsciption.cancel');
+    Route::delete('/subscription/resume',[SubscriptionController::class,'resumeSubscription'])->name('subsciption.resume');
+});
+// <--STRIPE ROUTES-----------
+
 
 
 Auth::routes();
