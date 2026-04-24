@@ -7,7 +7,7 @@ use Laravel\Cashier\Exceptions\IncompletePayment;
 class SubscriptionController extends Controller
 {
     /**
-     * Show the pricing page with available plans
+     * Show the subscription page with available plans
      */
     public function index()
     {
@@ -20,7 +20,7 @@ class SubscriptionController extends Controller
             $currentSubscription = $user->subscription('default')->strip_plan;
         }
 
-        return view('pricing', compact('plans', 'currentSubscription'));
+        return view('subscription', compact('plans', 'currentSubscription'));
     }
 
     /**
@@ -32,7 +32,6 @@ class SubscriptionController extends Controller
         $request->validate([
             'price_id' => 'required|string',
         ]);
-
         $user    = $request->user();
         $priceId = $request->price_id;
 
@@ -53,7 +52,7 @@ class SubscriptionController extends Controller
      */
     public function success()
     {
-        return view('subscription.success');
+        return redirect('/home')->with("success","payment successful");
     }
 
     /**
@@ -70,29 +69,29 @@ class SubscriptionController extends Controller
     public function changePlan(Request $request)
     {
         $request->validate([
-            'new_price_id' => 'rrequired|string',
+            'new_price_id' => 'required|string',
         ]);
 
         $user       = $request->user();
         $newPriceId = $request->new_price_id;
 
         if (! $user->subscribed('default')) {
-            return redirect()->route('pricing')
+            return redirect()->route('subscription')
                 ->with("error", "You don\'t have an active subscription.");
         }
         try {
             // Swap to the new plan
             // Cashier handles proration automatically [citation:4]
             $user->subscription('default')->swap($newPriceId);
-            $newPlanName = $this->getPlanNameFromPriceId($newwPriceId);
+            $newPlanName = $this->getPlanNameFromPriceId($newPriceId);
 
-            return redirect()->route('pricing')
+            return redirect()->route('subscription')
                 ->with('success', "Your plan has been changed to {$newPlanName}.");
         } catch (IncompletePayment $exception) {
             // Handle incomplete payment (e.g., 3D Secure required)
             return redirect()->route(
                 'cashier.payment',
-                [$exception->payment->id, 'redirect' => route('pricing')]
+                [$exception->payment->id, 'redirect' => route('subscription')]
             );
         }
     }
@@ -103,7 +102,7 @@ class SubscriptionController extends Controller
     public function cancelSubscription(Request $request)
     {
         $user = $request->user();
-        if (! $user->subscripted('default')) {
+        if (! $user->subscribed('default')) {
             return back()->with('error', "No active subscripion found.");
         }
 
@@ -112,7 +111,7 @@ class SubscriptionController extends Controller
 
         $endsAt = $user->subscription('default')->ends_at->format("F j, Y");
 
-        return redirect()->route('pricing')->with('warning', "Your subscription has been cancelled. You'll have access untill {$endsAt}.");
+        return redirect()->route('subscription')->with('warning', "Your subscription has been cancelled. You'll have access untill {$endsAt}.");
     }
 
     /**
@@ -128,11 +127,11 @@ class SubscriptionController extends Controller
         }
 
         if ($user->subscription('default')->onGracePeriod()) {
-            $user->subscription('default')->resumme();
-            return redirect()->route('pricing')->with('success', 'Your subscription has been resumed.');
+            $user->subscription('default')->resume();
+            return redirect()->route('subscription')->with('success', 'Your subscription has been resumed.');
         }
 
-        return redirect()->route('pricing')->with('error', 'Your grace period has expired.
+        return redirect()->route('subscription')->with('error', 'Your grace period has expired.
             please create a new subscription.');
     }
 

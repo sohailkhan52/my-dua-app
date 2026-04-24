@@ -62,6 +62,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/chat">Chat</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/subscription">Plans</a>
+                    </li>
                 </ul>
             </div>
 
